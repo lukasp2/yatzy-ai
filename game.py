@@ -24,13 +24,13 @@ class Yatzy:
             print("\tROUND", round)
             for player in self.players:
                 self.throw_dice([ 0, 1, 2, 3, 4 ])
-                print("\t\tthrow 1", self.dice)
-                for throw_number in range(2, 4):
-                    decision = player.decide_dice_throw(throw_number, self.dice)
+                print("\t\tthrow 1", self.die)
+                for throw_number in range(1, 3):
+                    decision = player.decide_dice_throw(throw_number, self.die)
                     self.throw_dice(decision)
-                    print("\t\tthrow", throw_number, self.dice)
+                    print("\t\tthrow", throw_number, self.die)
 
-                field_index, score = player.decide_score_logging(self.dice)
+                field_index, score = player.decide_score_logging(self.die)
                 print("\t\tput", score, "points on", self.idx_to_name(field_index))
                 self.set_score_field(player, field_index, score)
         
@@ -53,14 +53,10 @@ class Yatzy:
         player.score_fields[index] = score
         player.available_fields[index] = 0
         
-    # randomizes the values in the self.dice on the indexes indicated by the input array.
+    # randomizes the values in the self.die on the indexes indicated by the input array.
     def throw_dice(self, dice_idx_to_throw):
         for index in dice_idx_to_throw:
             self.die[index] = randint(1,6)
-
-    # prints current set of die
-    def print_dice(self):
-        print(' '.join(self.dice))
 
     # prints current state of all players scores
     def print_score_board(self):

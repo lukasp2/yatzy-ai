@@ -17,9 +17,22 @@ class Model:
         outputs = np.array(outputs).reshape(-1, self.num_outputs)
         self.model.fit(inputs, outputs)
 
-    # TODO!!!
-    def save_model(self):
-        self.model.save()
+    def save_model(self, filename):
+        model_json = self.model.to_json()
+        with open(filename + ".json", "w") as json_file:
+            json_file.write(model_json)
+        self.model.save_weights(filename + ".h5")
+
+    def load_model(self, filename):
+        json_file = open(filename + '.json', 'r')
+        loaded_model_json = json_file.read()
+        json_file.close()
+        self.model = keras.models.model_from_json(loaded_model_json)
+        self.model.load_weights(filename + '.h5')
+        self.compile_model()
+
+    def compile_model(self):
+        self.model.compile(optimizer="adam", loss='mean_squared_error', metrics=['mean_squared_error'])
 
     # turns a value into a one-hot, like for the dice value 2, the func
     # call would be to_categorical(6, 1) with return val [0, 0, 0, 0, 1, 0]
@@ -68,7 +81,7 @@ class DiceThrowModel(Model):
             Dense(units=self.num_outputs, activation='linear'),
         ])
 
-        self.model.compile(optimizer="adam", loss='mean_squared_error', metrics=['mean_squared_error'])
+        self.compile_model()
 
     # train model with inputs and outputs from one game
     # number of dice throws are 15 * 3, thus one game consists of 45 batches
@@ -119,6 +132,12 @@ class DiceThrowModel(Model):
 
         return dice_to_throw
 
+    def save_model(self):
+        return super().save_model('DiceThrowModel')
+
+    def load_model(self):
+        return super().load_model('DiceThrowModel')
+
 # Model predicting best field to pick on the score board given a set of die.
 # input: 
 #   * (15) score field: field_index as one-hot value
@@ -138,8 +157,8 @@ class ScoreLogModel(Model):
             Dense(units=self.num_outputs, activation='linear'),
         ])
 
-        self.model.compile(optimizer="adam", loss='mean_squared_error', metrics=['mean_squared_error'])
-
+        self.compile_model()
+        
     # train model with inputs and outputs
     def train(self, history):
         data = history.getScoreLogData()
@@ -182,3 +201,8 @@ class ScoreLogModel(Model):
 
         return best_move
   
+    def save_model(self):
+        return super().save_model('ScoreLogModel')
+
+    def load_model(self):
+        return super().load_model('ScoreLogModel')
