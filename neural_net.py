@@ -63,9 +63,8 @@ class DiceThrowModel(Model):
 
         self.model = Sequential([
             Dense(units=self.num_inputs, input_shape=(self.num_inputs,), activation='relu'),
+            Dense(units=63, activation='relu'),
             Dense(units=32, activation='relu'),
-            Dense(units=20, activation='relu'),
-            Dense(units=8, activation='relu'),
             Dense(units=self.num_outputs, activation='linear'),
         ])
 
@@ -134,8 +133,8 @@ class ScoreLogModel(Model):
 
         self.model = Sequential([
             Dense(units=self.num_inputs, input_shape=(self.num_inputs,), activation='relu'),
+            Dense(units=64, activation='relu'),
             Dense(units=32, activation='relu'),
-            Dense(units=16, activation='relu'),
             Dense(units=self.num_outputs, activation='linear'),
         ])
 
