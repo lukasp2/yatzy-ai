@@ -9,8 +9,10 @@ class TrainingGame(Yatzy):
         self.history = History()
     
     def playN(self, N):
+        score_sum = 0
         for current_play in range(1, N + 1):
-            self.play(current_play, N)
+            score_sum += self.play(current_play, N)
+            print('\tcurrent average score:', score_sum / current_play)
 
     def play(self, current_play = 1, N = 1):
         self.history.initiate_game()
@@ -54,9 +56,13 @@ class TrainingGame(Yatzy):
             # save play to history
             self.history.game.commit_play()
 
-        print("\ttotal points:", self.count_points(self.players[0]))
+        total_score = self.count_points(self.players[0])
 
-        self.history.commit_game(self.count_points(self.players[0]))
+        print("\ttotal score:", total_score)
+
+        self.history.commit_game(total_score)
+
+        return total_score
 
         # train the players models with history
         self.players[0].dicethrowModel.train(self.history)
