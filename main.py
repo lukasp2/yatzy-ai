@@ -2,6 +2,7 @@ from models import DiceThrowModel, ScoreLogModel
 from training_game import TrainingGame
 from player import Player
 from strategy import Strategy
+import warnings
 
 def main():
     diceModel = DiceThrowModel()
@@ -32,4 +33,5 @@ def main():
     # avg. 72.15 after 1400 games
 
 if __name__ == '__main__':
+    warnings.simplefilter('error', UserWarning)
     main()

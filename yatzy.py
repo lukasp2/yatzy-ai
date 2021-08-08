@@ -1,4 +1,5 @@
 from random import randint
+import numpy as np
 
 from history import History
 
@@ -6,7 +7,7 @@ from history import History
 class Yatzy:
     def __init__(self, players):
         self.players = players
-        self.die = [1, 1, 1, 1, 1]
+        self.die = np.array([1, 1, 1, 1, 1])
         self.history = History()
 
     # plays the game
@@ -103,6 +104,3 @@ class Yatzy:
                 'sixes', 'pair', 'two pair', 'three of a kind', 
                 'four of a kind', 'small straight', 'large straight', 
                 'full house', 'chance', 'yatzy'][field_index]
-
-    def max_points(self, field_index):
-        return [5, 10, 15, 20, 25, 30, 12, 22, 18, 24, 15, 20, 28, 30, 50][field_index]

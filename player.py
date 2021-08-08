@@ -1,5 +1,6 @@
 from collections import Counter
 from random import randint
+import numpy as np
 import numpy.ma as ma
 
 # Defines a player in the game (a set of scores and actions to be performed on the scores)
@@ -28,7 +29,7 @@ class Player:
             if self.score_fields.mask[field_index] == False:
                 points = 0
                 if 0 <= field_index <= 5: # singles
-                    points = dice.count(field_index + 1) * (field_index + 1)
+                    points = np.count_nonzero(dice == field_index + 1, axis=0) * (field_index + 1)
                 if field_index == 6: # pair
                     points = find_highest_duplicate_dice(dice, 2) * 2
                 if field_index == 7: # two pair
@@ -43,10 +44,10 @@ class Player:
                 if field_index == 9: # four of a kind
                     points = find_highest_duplicate_dice(dice, 4) * 4
                 if field_index == 10: # small straigt
-                    if dice == [1, 2, 3, 4, 5]:
+                    if np.all(dice == np.array([1, 2, 3, 4, 5])):
                         points = 15
                 if field_index == 11: # large straigt
-                    if dice == [2, 3, 4, 5, 6]:
+                    if np.all(dice == np.array([2, 3, 4, 5, 6])):
                         points = 20
                 if field_index == 12: # full house
                     dup_1 = find_highest_duplicate_dice(dice, 3)
@@ -58,7 +59,7 @@ class Player:
                 if field_index == 13: # chance
                     points = sum(dice)
                 if field_index == 14: # yatzy
-                    if dice.count(dice[0]) == 5:
+                    if np.all(dice == dice[0]):
                         points = 50
                 
                 possible_moves.append((field_index, points))

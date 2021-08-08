@@ -1,3 +1,4 @@
+import copy
 from yatzy import Yatzy
 
 # A Yatzy game in which a player trains the neural nets

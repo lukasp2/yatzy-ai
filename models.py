@@ -4,6 +4,7 @@ import tensorflow as tf
 from tensorflow import keras
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Dense
+from tensorflow.python.keras.layers.core import Dropout
 
 class Model:
     def __init__(self, num_inputs, num_outputs):
@@ -13,8 +14,8 @@ class Model:
 
     # takes training data and feeds it to the model
     def train(self, inputs, outputs):
-        inputs = np.array(inputs).reshape(-1, self.num_inputs)
-        outputs = np.array(outputs).reshape(-1, self.num_outputs)
+        inputs = np.array(inputs, dtype="object").reshape(-1, self.num_inputs).astype('float32')
+        outputs = np.array(outputs).reshape(-1, self.num_outputs).astype('float32')
         self.model.fit(inputs, outputs)
 
     def save_model(self, filename):
@@ -31,12 +32,12 @@ class Model:
         self.model.load_weights(filename + '.h5')
 
     def compile_model(self):
-        self.model.compile(optimizer="adam", loss='mean_squared_error', metrics=['accuracy', 'mean_squared_error'])
+        self.model.compile(optimizer="adam", loss='mean_squared_error', metrics=['mean_squared_error'])
 
     # turns a value into a one-hot, like for the dice value 2, the func
     # call would be to_categorical(6, 1) with return val [0, 0, 0, 0, 1, 0]
     def to_categorical(self, num_classes, category):
-        return list(tf.keras.utils.to_categorical(category, num_classes=num_classes, dtype=int))
+        return np.array(tf.keras.utils.to_categorical(category, num_classes=num_classes, dtype=int))
 
     def categorize_die(self, die):
         categorical_die = ma.masked_array([])
@@ -52,7 +53,9 @@ class Model:
 
     def normalize_score_fields(self, score_fields):
         max_scores = [5, 10, 15, 20, 25, 30, 12, 22, 18, 24, 15, 20, 28, 30, 50]
-        return ma.masked_array([ score / max_scores[idx] for idx, score in enumerate(score_fields) ])
+        for idx in range(len(score_fields)):
+            score_fields.data[idx] /= max_scores[idx]
+        return score_fields
 
 # Model predicting which of the 5 die is best to throw again.
 # input: 
@@ -67,7 +70,8 @@ class DiceThrowModel(Model):
 
         self.model = Sequential([
             Dense(units=self.num_inputs, input_shape=(self.num_inputs,), activation='relu'),
-            Dense(units=32, activation='relu'),
+            Dense(units=42, activation='relu'),
+            Dropout(0.5),
             Dense(units=32, activation='relu'),
             Dense(units=self.num_outputs, activation='linear'),
         ])
@@ -119,7 +123,8 @@ class DiceThrowModel(Model):
                 max_value = value
                 best_move = inputs["die"]
 
-        return best_move
+        die_to_throw = np.array([ idx for idx in range(len(best_move)) if best_move.mask[idx] is not ma.masked ])
+        return die_to_throw
 
     def save_model(self):
         return super().save_model('DiceThrowModel')
@@ -141,6 +146,7 @@ class ScoreLogModel(Model):
         self.model = Sequential([
             Dense(units=self.num_inputs, input_shape=(self.num_inputs,), activation='relu'),
             Dense(units=48, activation='relu'),
+            Dropout(0.5),
             Dense(units=32, activation='relu'),
             Dense(units=self.num_outputs, activation='linear'),
         ])

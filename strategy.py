@@ -8,8 +8,8 @@ class Strategy:
         self.scoreModel = scoreModel
         
         if load_models:
-            diceModel.load()
-            scoreModel.load()
+            diceModel.load_model()
+            scoreModel.load_model()
     
     def decide_dice_throw(self, score_fields, throw_number, dice):
         if self.strategy == 'random':
