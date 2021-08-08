@@ -8,7 +8,7 @@ class Player:
     def __init__(self, name, strategy):
         self.name = name
         self.strategy = strategy
-        self.score_fields = ma.masked_array([ 0 for i in range(15) ], mask=False) # contains scores
+        self.score_fields = ma.masked_array([ 0.0 for i in range(15) ], mask=False, dtype='float32')
 
     # returns a list of scoring options the player has given a certain set of dice.
     # the list contains tuples (field index, points), so (0, 3) means the player can

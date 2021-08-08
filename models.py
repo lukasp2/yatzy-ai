@@ -14,8 +14,8 @@ class Model:
 
     # takes training data and feeds it to the model
     def train(self, inputs, outputs):
-        inputs = np.array(inputs, dtype="object").reshape(-1, self.num_inputs).astype('float32')
-        outputs = np.array(outputs).reshape(-1, self.num_outputs).astype('float32')
+        inputs = np.array(inputs, dtype="float32").reshape(-1, self.num_inputs)
+        outputs = np.array(outputs).reshape(-1, self.num_outputs)
         self.model.fit(inputs, outputs)
 
     def save_model(self, filename):
@@ -52,10 +52,8 @@ class Model:
         return [ final_score / 374 for final_score in final_scores ]
 
     def normalize_score_fields(self, score_fields):
-        max_scores = [5, 10, 15, 20, 25, 30, 12, 22, 18, 24, 15, 20, 28, 30, 50]
-        for idx in range(len(score_fields)):
-            score_fields.data[idx] /= max_scores[idx]
-        return score_fields
+        max_scores = np.array([5, 10, 15, 20, 25, 30, 12, 22, 18, 24, 15, 20, 28, 30, 50])
+        return [ score_fields.data[idx] / max_scores[idx] for idx in range(len(score_fields)) ]
 
 # Model predicting which of the 5 die is best to throw again.
 # input: 
@@ -103,7 +101,7 @@ class DiceThrowModel(Model):
     # returns the dice to throw in the form of a list of indexes
     def decide_dice_throw(self, score_fields, throw_number, dice):
         max_value = 0
-        best_move = [0, 1, 2, 3, 4]
+        best_move = ma.masked_array([0, 1, 2, 3, 4], mask=False)
 
         # looping through all 32 ways to select any number of die from 5 die (2^5)
         for i in range(32):

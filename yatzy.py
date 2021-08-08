@@ -1,3 +1,4 @@
+import copy
 from random import randint
 import numpy as np
 
@@ -46,7 +47,7 @@ class Yatzy:
 
     # logs result
     def set_score_field(self, player, index, score):
-        player.score_fields[index] = score
+        player.score_fields.data[index] = float(score)
         player.score_fields.mask[index] = True
         
     # randomizes the values in the self.die on the indexes indicated by the input array.
