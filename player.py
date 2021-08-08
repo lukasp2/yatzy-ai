@@ -1,14 +1,13 @@
 from collections import Counter
-
 from random import randint
+import numpy.ma as ma
 
 # Defines a player in the game (a set of scores and actions to be performed on the scores)
 class Player:
     def __init__(self, name, strategy):
         self.name = name
         self.strategy = strategy
-        self.score_fields = [ 0 for i in range(15) ] # contains scores
-        self.available_fields = [ 1 for i in range(15) ] # a availability of fields, 1 = available, 0 = occupied
+        self.score_fields = ma.masked_array([ 0 for i in range(15) ], mask=False) # contains scores
 
     # returns a list of scoring options the player has given a certain set of dice.
     # the list contains tuples (field index, points), so (0, 3) means the player can
@@ -25,8 +24,8 @@ class Player:
 
         possible_moves = []
 
-        for field_index in range(len(self.available_fields)):
-            if self.available_fields[field_index] == True:
+        for field_index in range(len(self.score_fields)):
+            if self.score_fields.mask[field_index] == False:
                 points = 0
                 if 0 <= field_index <= 5: # singles
                     points = dice.count(field_index + 1) * (field_index + 1)
@@ -67,13 +66,12 @@ class Player:
         return possible_moves
 
     def reset_board(self):
-        self.score_fields = [ 0 for i in range(15) ]
-        self.available_fields = [ 1 for i in range(15) ]
+        self.score_fields = ma.masked_array([ 0 for i in range(15) ], mask=False)
 
     # returns which dice to throw
     def decide_dice_throw(self, throw_number, dice):
-        return self.strategy.decide_dice_throw(self.score_fields, self.available_fields, throw_number, dice)
+        return self.strategy.decide_dice_throw(self.score_fields, throw_number, dice)
 
     # returns which score field to fill with what value
     def decide_score_logging(self, dice):
-        return self.strategy.decide_score_logging(dice, self.score_fields, self.available_fields, self.get_possible_moves(dice))
+        return self.strategy.decide_score_logging(dice, self.score_fields, self.get_possible_moves(dice))

@@ -3,7 +3,7 @@
 ## About
 * This program trains a neural network to play the game of [Yatzy][1].
 * It plays by the Scandinavian rules, where the max score is 374, and the statisically optimal strategy gives an average score of [248.68][2]
-* Average score of the AI is yet unknown. More training is needed.
+* Average score of the AI is 68 after 1000 games. More training is needed.
 * It is written in Python using the [Keras][3] interface to [Tensorflow][4].
 
 [1]: https://en.wikipedia.org/wiki/Yatzy
