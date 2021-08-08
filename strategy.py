@@ -1,4 +1,3 @@
-from json import loads
 from random import randint
 
 class Strategy:

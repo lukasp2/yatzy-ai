@@ -32,7 +32,7 @@ class Model:
         self.model.load_weights(filename + '.h5')
 
     def compile_model(self):
-        self.model.compile(optimizer="adam", loss='mean_squared_error', metrics=['mean_squared_error'])
+        self.model.compile(optimizer="adam", loss='mean_absolute_error', metrics=['accuracy', 'mean_absolute_error'])
 
     # turns a value into a one-hot, like for the dice value 2, the func
     # call would be to_categorical(6, 1) with return val [0, 0, 0, 0, 1, 0]
@@ -69,7 +69,6 @@ class DiceThrowModel(Model):
         self.model = Sequential([
             Dense(units=self.num_inputs, input_shape=(self.num_inputs,), activation='relu'),
             Dense(units=42, activation='relu'),
-            Dropout(0.5),
             Dense(units=32, activation='relu'),
             Dense(units=self.num_outputs, activation='linear'),
         ])
@@ -105,16 +104,13 @@ class DiceThrowModel(Model):
 
         # looping through all 32 ways to select any number of die from 5 die (2^5)
         for i in range(32):
-            inputs = {}
-            # using a binary counter going from 00000 ... 11111 as a way to select
-            # all combinations of dice, each combination stored in 'die'
-            #inputs["die"] = [ a * b for a, b in zip(dice, list(map(int, bin(i)[2:].zfill(5)))) ]
-            
             # using a mask to select all possible combinations of dice
             mask = list(map(int, bin(i)[2:].zfill(5)))
-            inputs["die"] = ma.masked_array(dice, mask=mask)
-            inputs["throw_number"] = throw_number
-            inputs["score_fields"] = score_fields
+            inputs = { 
+                "die" : ma.masked_array(dice, mask=mask),
+                "throw_number" : throw_number,
+                "score_fields" : score_fields,
+            }
             value = self.predict(inputs)
 
             if value > max_value:
@@ -144,7 +140,6 @@ class ScoreLogModel(Model):
         self.model = Sequential([
             Dense(units=self.num_inputs, input_shape=(self.num_inputs,), activation='relu'),
             Dense(units=48, activation='relu'),
-            Dropout(0.5),
             Dense(units=32, activation='relu'),
             Dense(units=self.num_outputs, activation='linear'),
         ])

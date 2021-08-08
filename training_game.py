@@ -1,4 +1,4 @@
-import copy
+from collections import deque
 from yatzy import Yatzy
 
 # A Yatzy game in which a player trains the neural nets
@@ -8,17 +8,15 @@ class TrainingGame(Yatzy):
         self.player = player
     
     def playN(self, N):
-        self.average_score = 0
         self.high_score = 0
-        game_scores = []
+        game_scores = deque(maxlen=100)
         for current_play in range(1, N + 1):
             score = self.play(current_play, N)
             game_scores.append(score)
-            divisor = 100 if len(game_scores) > 100 else len(game_scores)
-            self.average_score = sum(game_scores[len(game_scores) - 100:]) / divisor
+            self.average_score = sum(game_scores) / len(game_scores)
             if self.high_score < score:
                 self.high_score = score
-            print('\tcurrent average score:', self.average_score)
+            print('\tcurrent average score:', self.average_score, 'high score:', self.high_score)
 
     def play(self, current_play = 1, N = 1):
         self.history.clear_history()
