@@ -4,11 +4,9 @@ from random import randint
 
 # Defines a player in the game (a set of scores and actions to be performed on the scores)
 class Player:
-    def __init__(self, name, strategy='random', dicethrowModel=None, scorelogModel=None):
+    def __init__(self, name, strategy):
         self.name = name
-        self.strategy = strategy # the game strategy used by the player { random, neural network }
-        self.dicethrowModel = dicethrowModel
-        self.scorelogModel = scorelogModel
+        self.strategy = strategy
         self.score_fields = [ 0 for i in range(15) ] # contains scores
         self.available_fields = [ 1 for i in range(15) ] # a availability of fields, 1 = available, 0 = occupied
 
@@ -74,46 +72,8 @@ class Player:
 
     # returns which dice to throw
     def decide_dice_throw(self, throw_number, dice):
-        if self.strategy == 'random':
-            # 1. randomize amount of dice, X, [0 <= X <= 5]
-            amt_of_dice = randint(0,5) 
-
-            # 2. return list of dice indexes to throw [0 .. X]
-            return list(range(amt_of_dice)) 
-
-        elif self.strategy == 'model':
-            return self.dicethrowModel.decide_dice_throw(self.score_fields, self.available_fields, throw_number, dice)
-        
-        elif self.strategy == 'human':
-            # TODO: this strategy lets you give the input
-            pass
-
-        elif self.strategy == 'statistical':
-            # TODO: this strategy decides based on the statistically best option
-            pass
+        return self.strategy.decide_dice_throw(self.score_fields, self.available_fields, throw_number, dice)
 
     # returns which score field to fill with what value
     def decide_score_logging(self, dice):
-        if self.strategy == 'random': 
-            # 1. get possible moves
-            possible_moves = self.get_possible_moves(dice)
-
-            # 2. choose one on random
-            random_move = possible_moves[ randint(0, len(possible_moves) - 1) ]
-
-            # 2.5 choose the one with highest value
-            #random_move = max(possible_moves, key=lambda item : item[1])
-
-            # 3. return the move (field index, points)
-            return random_move
-
-        elif self.strategy == 'model':
-            return self.scorelogModel.decide_score_logging(dice, self.score_fields, self.available_fields, self.get_possible_moves(dice))
-
-        elif self.strategy == 'human':
-            # TODO: this strategy lets you give the input
-            pass
-
-        elif self.strategy == 'statistical':
-            # TODO: this strategy decides based on the statistically best option
-            pass
+        return self.strategy.decide_score_logging(dice, self.score_fields, self.available_fields, self.get_possible_moves(dice))
