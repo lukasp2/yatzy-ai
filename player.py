@@ -74,4 +74,4 @@ class Player:
 
     # returns which score field to fill with what value
     def decide_score_logging(self, dice):
-        return self.strategy.decide_score_logging(dice, self.score_fields, self.get_possible_moves(dice))
+        return self.strategy.decide_score_logging(self.score_fields, self.get_possible_moves(dice))

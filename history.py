@@ -73,15 +73,15 @@ class History:
     def get_score_log_data(self):
         data = {
             "field_indexes" : [],
-            "die" : [],
+            "scores" : [],
             "score_fields" : [],
             "outputs" : []
         }
 
         for game in self.games:
             for play in game.plays:
-                data["field_indexes"].append( play.scoring[0] ) # field index of current option
-                data["die"].append(play.dice_throws[-1])
+                data["field_indexes"].append(play.scoring[0]) # field index of current option
+                data["scores"].append(play.scoring[1]) # score of current option
                 data["score_fields"].append(play.score_fields)
                 data["outputs"].append(game.final_score)
 

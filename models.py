@@ -30,9 +30,10 @@ class Model:
         json_file.close()
         self.model = keras.models.model_from_json(loaded_model_json)
         self.model.load_weights(filename + '.h5')
+        self.compile_model()
 
     def compile_model(self):
-        self.model.compile(optimizer="adam", loss='mean_absolute_error', metrics=['accuracy', 'mean_absolute_error'])
+        self.model.compile(optimizer="adam", loss='mean_squared_error', metrics=['mean_squared_error'])
 
     # turns a value into a one-hot, like for the dice value 2, the func
     # call would be to_categorical(6, 1) with return val [0, 0, 0, 0, 1, 0]
@@ -50,6 +51,10 @@ class Model:
     # functions for normalizing the input values to the models
     def normalize_final_scores(self, final_scores):
         return [ final_score / 374 for final_score in final_scores ]
+
+    def normalize_score(self, field_index, score):
+        max_scores = np.array([5, 10, 15, 20, 25, 30, 12, 22, 18, 24, 15, 20, 28, 30, 50])
+        return np.array([score / max_scores[field_index]])
 
     def normalize_score_fields(self, score_fields):
         max_scores = np.array([5, 10, 15, 20, 25, 30, 12, 22, 18, 24, 15, 20, 28, 30, 50])
@@ -69,7 +74,9 @@ class DiceThrowModel(Model):
         self.model = Sequential([
             Dense(units=self.num_inputs, input_shape=(self.num_inputs,), activation='relu'),
             Dense(units=42, activation='relu'),
-            Dense(units=32, activation='relu'),
+            Dense(units=42, activation='relu'),
+            Dense(units=42, activation='relu'),
+            Dense(units=42, activation='relu'),
             Dense(units=self.num_outputs, activation='linear'),
         ])
 
@@ -94,7 +101,7 @@ class DiceThrowModel(Model):
         score_fields = self.normalize_score_fields(data["score_fields"])
 
         input_tensor = ma.concatenate([die, throw_number, score_fields])
-        predicted_output = self.model.predict(input_tensor.reshape(-1, self.num_inputs))[0][index]
+        predicted_output = self.model.predict(input_tensor.reshape(-1, self.num_inputs))[0][index]    
         return predicted_output
 
     # returns the dice to throw in the form of a list of indexes
@@ -112,12 +119,11 @@ class DiceThrowModel(Model):
                 "score_fields" : score_fields,
             }
             value = self.predict(inputs)
-
             if value > max_value:
                 max_value = value
                 best_move = inputs["die"]
 
-        die_to_throw = np.array([ idx for idx in range(len(best_move)) if best_move.mask[idx] is not ma.masked ])
+        die_to_throw = np.array([ idx for idx in range(len(best_move)) if best_move[idx] is not ma.masked ])
         return die_to_throw
 
     def save_model(self):
@@ -126,21 +132,22 @@ class DiceThrowModel(Model):
     def load_model(self):
         return super().load_model('DiceThrowModel')
 
-# Model predicting best field to pick on the score board given a set of die.
+# Model predicting best field to pick on the score board
 # input: 
 #   * (15) score field: field_index as one-hot value
-#   * (30) 5 die as one-hot values: [d1, d2, d3, d4, d5] * [x, x, x, x, x, x]
+#   * (1) score value
 #   * (15) Player.score_fields: [s1, s2, ..., s15]
 # output:
 #   * (1) expected final score of the game for this input
 class ScoreLogModel(Model):
     def __init__(self):
-        super().__init__(60, 1)
+        super().__init__(31, 1)
 
         self.model = Sequential([
             Dense(units=self.num_inputs, input_shape=(self.num_inputs,), activation='relu'),
-            Dense(units=48, activation='relu'),
-            Dense(units=32, activation='relu'),
+            Dense(units=20, activation='relu'),
+            Dense(units=20, activation='relu'),
+            Dense(units=20, activation='relu'),
             Dense(units=self.num_outputs, activation='linear'),
         ])
 
@@ -150,32 +157,31 @@ class ScoreLogModel(Model):
     def train(self, history):
         data = history.get_score_log_data()
         field_indexes = [ self.to_categorical(15, field_index) for field_index in data["field_indexes"] ]
-        die = [ self.categorize_die(die) for die in data["die"] ]
+        scores = [ self.normalize_score(field_index, score) for field_index, score in zip(data["field_indexes"], data["scores"]) ]
         score_fields = [ self.normalize_score_fields(score_field) for score_field in data["score_fields"] ]
-
-        inputs = [ ma.concatenate([field_indexes[i], die[i], score_fields[i]]) for i in range(len(die)) ]
+        inputs = [ ma.concatenate([field_indexes[i], scores[i], score_fields[i]]) for i in range(len(scores)) ]
         outputs = self.normalize_final_scores(data["outputs"])
         super().train(inputs, outputs)
 
     # make a prediction of output based on input
     def predict(self, data, index = 0):
         field_index = self.to_categorical(15, data["field_index"])
-        die = self.categorize_die(data["die"])
+        score = self.normalize_score(data["field_index"], data["score"])
         score_fields = self.normalize_score_fields(data["score_fields"])
 
-        input_tensor = ma.concatenate([field_index, die, score_fields])
+        input_tensor = ma.concatenate([field_index, score, score_fields])
         predicted_output = self.model.predict(input_tensor.reshape(-1, self.num_inputs))[0][index]
         return predicted_output
 
     # returns the best move in the form [field_index, score]
-    def decide_score_logging(self, die, score_fields, possible_moves):
+    def decide_score_logging(self, score_fields, possible_moves):
         max_value = 0
         best_move = possible_moves[0]
 
         for move in possible_moves:
             inputs = {
                 "field_index" : move[0],
-                "die" : die,
+                "score" : move[1],
                 "score_fields" : score_fields,
             }
             value = self.predict(inputs)

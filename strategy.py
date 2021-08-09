@@ -29,14 +29,14 @@ class Strategy:
             # TODO: this strategy decides based on the statistically best option
             pass
 
-    def decide_score_logging(self, die, score_fields, possible_moves):
+    def decide_score_logging(self, score_fields, possible_moves):
         if self.strategy == 'random': 
             random_move = possible_moves[ randint(0, len(possible_moves) - 1) ]
 
             return random_move
 
         elif self.strategy == 'model':
-            return self.scoreModel.decide_score_logging(die, score_fields, possible_moves)
+            return self.scoreModel.decide_score_logging(score_fields, possible_moves)
 
         elif self.strategy == 'human':
             # TODO: this strategy lets you give the input
