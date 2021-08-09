@@ -12,9 +12,7 @@
 [4]: https://www.tensorflow.org/
 
 ## Setup
-* install python dependencies
-   * `pip3 install keras tensorflow scikit-learn`
-* set `LongPathsEnabled` to 1 in "registry editor" path: `HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\FileSystem` (Windows)
+* Install python dependencies `keras`, `tensorflow` and `scikit-learn`.
 * If your GPU supports CUDA, you can use [Anaconda][5] to run the program with your GPU. See a tutorial [here][6].
 
 [5]: https://www.anaconda.com/products/individual#Downloads
@@ -28,3 +26,5 @@ The game of Yatzy is defined in yatzy.py. A game is instantiated with a list of 
 * `human`: [not yet implemented] the player makes desicions based on input from the user.
 
 Actions that the models take and results that these actions give needs to be saved somewhere so that we can feed it to the model later for training. This data is saved in an object of type `History` (history.py). `TrainingGame` is inherited from `Yatzy`, and its purpose is to be an environment in which to train the models. It defines its own play() function which works exactly like `Yatzy:play()` but includes writing data to its history log while the game is played, and it trains the models with that data before returning.
+
+## UML
