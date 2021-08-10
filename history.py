@@ -1,4 +1,5 @@
 import numpy as np
+import numpy.ma as ma
 import tensorflow as tf
 from copy import deepcopy
 
@@ -32,12 +33,12 @@ class History:
         class Play:
             def __init__(self, score_fields):
                 self.score_fields = deepcopy(score_fields) # [ s1, s2, ..., s15 ] (just the scores)
-                self.dice_throws = [] # [[ d1, d2, ... d5 ], * 3 ]
+                self.rerolls = [] # [[ d1, d2, ... d5 ], * 2 ]
                 self.scoring = [] # [ field_index, score ]
 
-            # 3. add dice throw result to the play (three results will be added)
-            def add_dice(self, dice):
-                self.dice_throws.append(deepcopy(dice))
+            # 3. add reroll result to the play (two rerolls)
+            def add_reroll(self, reroll):
+                self.rerolls.append(deepcopy(reroll))
 
             # 4. add the scoring
             def add_scoring(self, field_index, score):
@@ -51,19 +52,19 @@ class History:
         self.games.clear()
 
     # retrieve parts of the history which the model use for training
-    def get_dice_throw_data(self):
+    def get_reroll_data(self):
         data = {
             "die" : [],
-            "throw_number" : [],
+            "reroll_num" : [],
             "score_fields" : [],
             "outputs" : []
         }
 
         for game in self.games:
             for play in game.plays:
-                for throw_number in range(len(play.dice_throws)):
-                    data["die"].append(play.dice_throws[throw_number])
-                    data["throw_number"].append ( throw_number )
+                for reroll_num in range(len(play.rerolls)):
+                    data["die"].append(play.rerolls[reroll_num])
+                    data["reroll_num"].append( reroll_num )
                     data["score_fields"].append(play.score_fields)
                     data["outputs"].append(game.final_score)
 

@@ -1,16 +1,16 @@
 from random import randint
 
 class Strategy:
-    def __init__(self, strategy, diceModel, scoreModel, load_models=False):
+    def __init__(self, strategy, rerollModel, scoreModel, load_models=False):
         self.strategy = strategy
-        self.diceModel = diceModel
+        self.rerollModel = rerollModel
         self.scoreModel = scoreModel
         
         if load_models:
-            diceModel.load_model()
+            rerollModel.load_model()
             scoreModel.load_model()
     
-    def decide_dice_throw(self, score_fields, throw_number, dice):
+    def decide_dice_throw(self, score_fields, reroll_num, dice):
         if self.strategy == 'random':
             # 1. randomize amount of dice, X, [0 <= X <= 5]
             amt_of_dice = randint(0,5) 
@@ -19,7 +19,7 @@ class Strategy:
             return list(range(amt_of_dice)) 
 
         elif self.strategy == 'model':
-            return self.diceModel.decide_dice_throw(score_fields, throw_number, dice)
+            return self.rerollModel.decide_reroll(score_fields, reroll_num, dice)
         
         elif self.strategy == 'human':
             # TODO: this strategy lets you give the input
@@ -31,8 +31,8 @@ class Strategy:
 
     def decide_score_logging(self, score_fields, possible_moves):
         if self.strategy == 'random': 
-            random_move = possible_moves[ randint(0, len(possible_moves) - 1) ]
-
+            top_moves = sorted(possible_moves, key=lambda item: item[1])[-3:]
+            random_move = top_moves[ randint(0, len(top_moves) - 1) ]
             return random_move
 
         elif self.strategy == 'model':

@@ -1,3 +1,5 @@
+import numpy.ma as ma
+
 from collections import deque
 from yatzy import Yatzy
 
@@ -37,24 +39,22 @@ class TrainingGame(Yatzy):
             if verbosity > 1:
                 print("\t\tdie: ", end='')
 
-            for throw_number in range(1, 3):
-                # the result is added to the history
-                self.history.game.play.add_dice(self.die)
-
+            for reroll_num in range(2):
                 # the player makes a decision to throw dice based on the result
-                decision = self.player.decide_dice_throw(throw_number, self.die)
+                decision = self.player.decide_reroll(reroll_num, self.die)
 
                 if verbosity > 1:
                     print( '[' + ', '.join([ str(self.die[idx]) + 'r' if idx in decision else str(self.die[idx]) for idx in range(len(self.die)) ]), '] -> ', end='')
+
+                # the reroll is added to the history
+                reroll = ma.masked_array(self.die, mask=[ 1 if i in decision else 0 for i in range(len(self.die))] )
+                self.history.game.play.add_reroll(reroll)
 
                 # throw dice again according to desicion
                 self.throw_dice(decision)
 
             if verbosity > 1:        
                 print(str(list(self.die)))
-
-            # the last result is added to the history
-            self.history.game.play.add_dice(self.die)
             
             # the player makes a decision about what field on the score board should be filled with what value
             field_index, score = self.player.decide_score_logging(self.die)
@@ -78,7 +78,7 @@ class TrainingGame(Yatzy):
         self.history.commit_game(total_score)
 
         # train the players models with history
-        self.player.strategy.diceModel.train(self.history)
+        self.player.strategy.rerollModel.train(self.history)
         self.player.strategy.scoreModel.train(self.history)
 
         return total_score

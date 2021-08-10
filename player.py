@@ -69,8 +69,8 @@ class Player:
         self.score_fields = ma.masked_array([ 0 for i in range(15) ], mask=False)
 
     # returns which dice to throw
-    def decide_dice_throw(self, throw_number, dice):
-        return self.strategy.decide_dice_throw(self.score_fields, throw_number, dice)
+    def decide_reroll(self, reroll_num, dice):
+        return self.strategy.decide_dice_throw(self.score_fields, reroll_num, dice)
 
     # returns which score field to fill with what value
     def decide_score_logging(self, dice):

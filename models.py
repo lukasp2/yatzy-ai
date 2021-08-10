@@ -4,7 +4,6 @@ import tensorflow as tf
 from tensorflow import keras
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Dense
-from tensorflow.python.keras.layers.core import Dropout
 
 class Model:
     def __init__(self, num_inputs, num_outputs):
@@ -14,22 +13,22 @@ class Model:
 
     # takes training data and feeds it to the model
     def train(self, inputs, outputs):
-        inputs = np.array(inputs, dtype="float32").reshape(-1, self.num_inputs)
+        inputs = np.array(inputs, dtype='float32').reshape(-1, self.num_inputs)
         outputs = np.array(outputs).reshape(-1, self.num_outputs)
         self.model.fit(inputs, outputs)
 
     def save_model(self, filename):
         model_json = self.model.to_json()
-        with open(filename + ".json", "w") as json_file:
+        with open('data/' + filename + '.json', 'w') as json_file:
             json_file.write(model_json)
-        self.model.save_weights(filename + ".h5")
+        self.model.save_weights('data/' + filename + '.h5')
 
     def load_model(self, filename):
-        json_file = open(filename + '.json', 'r')
+        json_file = open('data/' + filename + '.json', 'r')
         loaded_model_json = json_file.read()
         json_file.close()
         self.model = keras.models.model_from_json(loaded_model_json)
-        self.model.load_weights(filename + '.h5')
+        self.model.load_weights('data/' + filename + '.h5')
         self.compile_model()
 
     def compile_model(self):
@@ -63,13 +62,13 @@ class Model:
 # Model predicting which of the 5 die is best to throw again.
 # input: 
 #   * (30) 5 die as one-hot values: [d1, d2, d3, d4, d5] * [x, x, x, x, x, x]
-#   * (3) throw number [0..2] as a one-hot value: [x, x, x]
+#   * (2) reroll number [0..2] as a one-hot value: [x, x, x]
 #   * (15) Player.score_fields: [s1, s2, ..., s15]
 # output:
 #   * (1) expected final score of the game for this input
-class DiceThrowModel(Model):
+class RerollModel(Model):
     def __init__(self):
-        super().__init__(48, 1)
+        super().__init__(47, 1)
 
         self.model = Sequential([
             Dense(units=self.num_inputs, input_shape=(self.num_inputs,), activation='relu'),
@@ -85,27 +84,27 @@ class DiceThrowModel(Model):
     # train model with inputs and outputs from one game
     # number of dice throws are 15 * 3, thus one game consists of 45 batches
     def train(self, history):
-        data = history.get_dice_throw_data()
+        data = history.get_reroll_data()
         die = [ self.categorize_die(die) for die in data["die"] ]
-        throw_number = [ self.to_categorical(3, throw_number) for throw_number in data["throw_number"] ]
+        reroll_num = [ self.to_categorical(2, reroll_num) for reroll_num in data["reroll_num"] ]
         score_fields = [ self.normalize_score_fields(score_field) for score_field in data["score_fields"] ]
 
-        inputs = [ ma.concatenate([die[i], throw_number[i], score_fields[i]]) for i in range(len(die)) ]
+        inputs = [ ma.concatenate([die[i], reroll_num[i], score_fields[i]]) for i in range(len(die)) ]
         outputs = self.normalize_final_scores(data["outputs"])
         super().train(inputs, outputs)
     
     # make a prediction of output based on input
     def predict(self, data, index = 0):
         die = self.categorize_die(data["die"])
-        throw_number = self.to_categorical(3, data["throw_number"])
+        reroll_num = self.to_categorical(2, data["reroll_num"])
         score_fields = self.normalize_score_fields(data["score_fields"])
 
-        input_tensor = ma.concatenate([die, throw_number, score_fields])
+        input_tensor = ma.concatenate([die, reroll_num, score_fields])
         predicted_output = self.model.predict(input_tensor.reshape(-1, self.num_inputs))[0][index]    
         return predicted_output
 
     # returns the dice to throw in the form of a list of indexes
-    def decide_dice_throw(self, score_fields, throw_number, dice):
+    def decide_reroll(self, score_fields, reroll_num, dice):
         max_value = 0
         best_move = ma.masked_array([0, 1, 2, 3, 4], mask=False)
 
@@ -115,7 +114,7 @@ class DiceThrowModel(Model):
             mask = list(map(int, bin(i)[2:].zfill(5)))
             inputs = { 
                 "die" : ma.masked_array(dice, mask=mask),
-                "throw_number" : throw_number,
+                "reroll_num" : reroll_num,
                 "score_fields" : score_fields,
             }
             value = self.predict(inputs)
@@ -127,10 +126,10 @@ class DiceThrowModel(Model):
         return die_to_throw
 
     def save_model(self):
-        return super().save_model('DiceThrowModel')
+        return super().save_model('RerollModel')
 
     def load_model(self):
-        return super().load_model('DiceThrowModel')
+        return super().load_model('RerollModel')
 
 # Model predicting best field to pick on the score board
 # input: 
