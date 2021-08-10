@@ -66,7 +66,7 @@ class History:
                     data["die"].append(play.rerolls[reroll_num])
                     data["reroll_num"].append( reroll_num )
                     data["score_fields"].append(play.score_fields)
-                    data["outputs"].append(game.final_score)
+                    data["outputs"].append(play.scoring)
 
         return data
     
@@ -83,7 +83,7 @@ class History:
             for play in game.plays:
                 data["field_indexes"].append(play.scoring[0]) # field index of current option
                 data["scores"].append(play.scoring[1]) # score of current option
-                data["score_fields"].append(play.score_fields)
+                data["score_fields"].append(play.score_fields[:6])
                 data["outputs"].append(game.final_score)
 
         return data

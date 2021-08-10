@@ -1,6 +1,7 @@
-import copy
 from random import randint
+import numpy.ma as ma
 import numpy as np
+from collections import Counter
 
 from history import History
 
@@ -13,8 +14,7 @@ class Yatzy:
 
     # plays the game
     def play(self):
-        for player in self.players:
-            player.reset_board()
+        self.reset_boards()
 
         print('YATZY!')
         for round in range(1, 16):
@@ -32,6 +32,62 @@ class Yatzy:
                 self.set_score_field(player, field_index, score)
         
         self.print_score_board()
+
+    # returns a list of scoring options the player has given a certain set of dice.
+    # the list contains tuples (field index, points), so (0, 3) means the player can
+    # put 3 in the 'ones' field.
+    def get_possible_moves(self, score_fields):
+
+        # find highest value dice which occurs at least 'min_occurances' times
+        def find_highest_duplicate_dice(die, min_occurances):
+            highest_dice = 0
+            duplicates = [ k for k, v in Counter(die).items() if v >= min_occurances ]
+            if duplicates:
+                highest_dice = max(duplicates)
+            return highest_dice
+
+        possible_moves = []
+
+        for field_index in range(len(score_fields)):
+            if score_fields.mask[field_index] == False:
+                points = 0
+                if 0 <= field_index <= 5: # singles
+                    points = np.count_nonzero(self.die == field_index + 1, axis=0) * (field_index + 1)
+                if field_index == 6: # pair
+                    points = find_highest_duplicate_dice(self.die, 2) * 2
+                if field_index == 7: # two pair
+                    dup_1 = find_highest_duplicate_dice(self.die, 2)
+                    if dup_1:
+                        dice_cpy = [ x for x in self.die if x != dup_1 ]
+                        dup_2 = find_highest_duplicate_dice(dice_cpy, 2)
+                        if dup_2:
+                            points = dup_1 * 2 + dup_2 * 2
+                if field_index == 8: # three of a kind
+                    points = find_highest_duplicate_dice(self.die, 3) * 3
+                if field_index == 9: # four of a kind
+                    points = find_highest_duplicate_dice(self.die, 4) * 4
+                if field_index == 10: # small straigt
+                    if np.all(self.die == np.array([1, 2, 3, 4, 5])):
+                        points = 15
+                if field_index == 11: # large straigt
+                    if np.all(self.die == np.array([2, 3, 4, 5, 6])):
+                        points = 20
+                if field_index == 12: # full house
+                    dup_1 = find_highest_duplicate_dice(self.die, 3)
+                    if dup_1:
+                        dice_cpy = [ x for x in self.die if x != dup_1 ]
+                        dup_2 = find_highest_duplicate_dice(dice_cpy, 2)
+                        if dup_2:
+                            points = dup_1 * 3 + dup_2 * 2
+                if field_index == 13: # chance
+                    points = sum(self.die)
+                if field_index == 14: # yatzy
+                    if np.all(self.die == self.die[0]):
+                        points = 50
+                
+                possible_moves.append((field_index, points))
+
+        return possible_moves
 
     # counts the points for the bonus
     def count_bonus_points(self, player):
@@ -51,7 +107,7 @@ class Yatzy:
         player.score_fields.mask[index] = True
         
     # randomizes the values in the self.die on the indexes indicated by the input array.
-    def throw_dice(self, dice_idx_to_throw):
+    def throw_die(self, dice_idx_to_throw):
         for index in dice_idx_to_throw:
             self.die[index] = randint(1,6)
 
@@ -98,6 +154,10 @@ class Yatzy:
         _str += (' '*(n+0) + ' Score: {:5d}\n'.format(data['final_score']))
         _str += ('='*(2*n+13) +'\n')
         return _str
+
+    def reset_boards(self):
+        for player in self.players:
+            player.score_fields = ma.masked_array([ 0 for i in range(15) ], mask=False)
 
     # translates a field index into the name of that field
     def idx_to_name(self, field_index):

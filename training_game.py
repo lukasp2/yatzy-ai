@@ -23,10 +23,10 @@ class TrainingGame(Yatzy):
     def play(self, current_play = 1, N = 1, verbosity=2):
         self.history.clear_history()
         self.history.initiate_game()
-        self.player.reset_board()
+        self.reset_boards()
 
         if verbosity > 0:
-            print("TRAINING GAME", current_play, "/", N, '(played by', 'model)' if self.player.strategy.strategy == 'model' else 'random generator)')
+            print("TRAINING GAME", current_play, "/", N, '(played by', 'model)' if self.player.strategy.reroll_strategy == 'model' else 'random generator)')
 
         for round in range(1, 16):
             if verbosity > 1:
@@ -34,14 +34,14 @@ class TrainingGame(Yatzy):
             self.history.game.initiate_play(self.player.score_fields)
 
             # the player throws all dice
-            self.throw_dice([ 0, 1, 2, 3, 4 ])
+            self.throw_die([ 0, 1, 2, 3, 4 ])
 
             if verbosity > 1:
                 print("\t\tdie: ", end='')
 
             for reroll_num in range(2):
                 # the player makes a decision to throw dice based on the result
-                decision = self.player.decide_reroll(reroll_num, self.die)
+                decision = self.player.decide_reroll(self.die, reroll_num)
 
                 if verbosity > 1:
                     print( '[' + ', '.join([ str(self.die[idx]) + 'r' if idx in decision else str(self.die[idx]) for idx in range(len(self.die)) ]), '] -> ', end='')
@@ -51,13 +51,13 @@ class TrainingGame(Yatzy):
                 self.history.game.play.add_reroll(reroll)
 
                 # throw dice again according to desicion
-                self.throw_dice(decision)
+                self.throw_die(decision)
 
             if verbosity > 1:        
                 print(str(list(self.die)))
             
             # the player makes a decision about what field on the score board should be filled with what value
-            field_index, score = self.player.decide_score_logging(self.die)
+            field_index, score = self.player.decide_score_logging(self)
             if verbosity > 1:
                 print("\t\tput", score, "points on", self.idx_to_name(field_index))
 

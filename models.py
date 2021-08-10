@@ -47,6 +47,9 @@ class Model:
             categorical_die = ma.concatenate([categorical_die, masked_dice])
         return categorical_die
 
+    def available_fields(self, score_fields):
+        return [ 1 if score is not ma.masked else 0 for score in score_fields ]
+
     # functions for normalizing the input values to the models
     def normalize_final_scores(self, final_scores):
         return [ final_score / 374 for final_score in final_scores ]
@@ -62,8 +65,8 @@ class Model:
 # Model predicting which of the 5 die is best to throw again.
 # input: 
 #   * (30) 5 die as one-hot values: [d1, d2, d3, d4, d5] * [x, x, x, x, x, x]
-#   * (2) reroll number [0..2] as a one-hot value: [x, x, x]
-#   * (15) Player.score_fields: [s1, s2, ..., s15]
+#   * (2) reroll number [0..2] as a one-hot value: [x, x]
+#   * (15) available score fields: [s1, s2, ..., s15] 1 = available
 # output:
 #   * (1) expected final score of the game for this input
 class RerollModel(Model):
@@ -87,10 +90,14 @@ class RerollModel(Model):
         data = history.get_reroll_data()
         die = [ self.categorize_die(die) for die in data["die"] ]
         reroll_num = [ self.to_categorical(2, reroll_num) for reroll_num in data["reroll_num"] ]
-        score_fields = [ self.normalize_score_fields(score_field) for score_field in data["score_fields"] ]
+        available_fields = [ self.available_fields(score_fields) for score_fields in data["score_fields"] ]
 
-        inputs = [ ma.concatenate([die[i], reroll_num[i], score_fields[i]]) for i in range(len(die)) ]
-        outputs = self.normalize_final_scores(data["outputs"])
+        outputs = [ self.normalize_score(item[0], item[1]) for item in data["outputs"] ]
+        inputs = [ ma.concatenate([die[i], reroll_num[i], available_fields[i]]) for i in range(len(die)) ]
+        
+        #print('models.py: RerollModel:train() inputs:')
+        #[ print('die', data["die"][i], '\nreroll num', data['reroll_num'][i], '\nscore fields', data['score_fields'][i], '\noutput:', data['outputs'][i], '\n') for i in range(len(die)) ]
+
         super().train(inputs, outputs)
     
     # make a prediction of output based on input
@@ -135,12 +142,12 @@ class RerollModel(Model):
 # input: 
 #   * (15) score field: field_index as one-hot value
 #   * (1) score value
-#   * (15) Player.score_fields: [s1, s2, ..., s15]
+#   * (6) Player.score_fields: [s1, s2, ..., s6] # change to [0..5]?
 # output:
 #   * (1) expected final score of the game for this input
 class ScoreLogModel(Model):
     def __init__(self):
-        super().__init__(31, 1)
+        super().__init__(22, 1)
 
         self.model = Sequential([
             Dense(units=self.num_inputs, input_shape=(self.num_inputs,), activation='relu'),
@@ -181,7 +188,7 @@ class ScoreLogModel(Model):
             inputs = {
                 "field_index" : move[0],
                 "score" : move[1],
-                "score_fields" : score_fields,
+                "score_fields" : score_fields[:6],
             }
             value = self.predict(inputs)
 

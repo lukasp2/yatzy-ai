@@ -13,13 +13,15 @@ class UserInterface():
         pass
 
     def start(self):
-        configs = {
+        configs = { 
             'random games' : True,
             'load models' : False,
-            'model games' : True,
-            'num random games' : 1000,
-            'num model games' : 5,
+            'model games' : False,
+            'num random games' : 10000,
+            'num model games' : 0,
             'save models' : True,
+            'reroll_strategy' : 'model',
+            'score_strategy' : 'model',
         }
 
         # run ui here and set values in configs ...
@@ -28,12 +30,12 @@ class UserInterface():
         
     def run(self, configs):
         if configs['random games']:
-            rnd_strategy = Strategy('random', self.rerollModel, self.scoreModel)    
+            rnd_strategy = Strategy('random', 'random', self.rerollModel, self.scoreModel)    
             t = TrainingGame( Player('Frank', rnd_strategy) )
             t.playN(configs['num random games'])
 
         if configs['model games']:
-            model_strategy = Strategy('model', self.rerollModel, self.scoreModel, load_models=configs['load models'])
+            model_strategy = Strategy(configs['reroll_strategy'], configs['score_strategy'], self.rerollModel, self.scoreModel, load_models=configs['load models'])
             t = TrainingGame( Player('Frank', model_strategy) )
             t.playN(configs['num model games'])
 

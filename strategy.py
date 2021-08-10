@@ -1,48 +1,54 @@
+from collections import Counter
 from random import randint
+import numpy as np
 
 class Strategy:
-    def __init__(self, strategy, rerollModel, scoreModel, load_models=False):
-        self.strategy = strategy
+    def __init__(self, reroll_strategy, score_strategy, rerollModel, scoreModel, load_models=False):
+        self.reroll_strategy = reroll_strategy
+        self.score_strategy = score_strategy
         self.rerollModel = rerollModel
         self.scoreModel = scoreModel
         
         if load_models:
             rerollModel.load_model()
             scoreModel.load_model()
-    
-    def decide_dice_throw(self, score_fields, reroll_num, dice):
-        if self.strategy == 'random':
+
+    def decide_reroll(self, die, reroll_num, score_fields):
+        if self.reroll_strategy == 'random':
             # 1. randomize amount of dice, X, [0 <= X <= 5]
             amt_of_dice = randint(0,5) 
 
             # 2. return list of dice indexes to throw [0 .. X]
             return list(range(amt_of_dice)) 
 
-        elif self.strategy == 'model':
-            return self.rerollModel.decide_reroll(score_fields, reroll_num, dice)
+        elif self.reroll_strategy == 'model':
+            return self.rerollModel.decide_reroll(score_fields, reroll_num, die)
         
-        elif self.strategy == 'human':
+        elif self.reroll_strategy == 'human':
             # TODO: this strategy lets you give the input
             pass
 
-        elif self.strategy == 'statistical':
+        elif self.reroll_strategy == 'statistical':
             # TODO: this strategy decides based on the statistically best option
             pass
 
     def decide_score_logging(self, score_fields, possible_moves):
-        if self.strategy == 'random': 
-            top_moves = sorted(possible_moves, key=lambda item: item[1])[-3:]
-            random_move = top_moves[ randint(0, len(top_moves) - 1) ]
+        if self.score_strategy == 'random':
+            max_scores = np.array([3, 6, 9, 12, 15, 18, 12, 22, 18, 24, 15, 20, 28, 30, 50])
+            normalized_moves = [ (move[0], move[1] / max_scores[move[0]]) for move in possible_moves ]
+            top_moves = sorted(normalized_moves, key=lambda item: item[1])[-2:]
+            random_norm_move = top_moves[ randint(0, len(top_moves) - 1) ]
+            random_move = [ random_norm_move[0], int(random_norm_move[1] * max_scores[random_norm_move[0]]) ]
             return random_move
 
-        elif self.strategy == 'model':
+        elif self.score_strategy == 'model':
             return self.scoreModel.decide_score_logging(score_fields, possible_moves)
 
-        elif self.strategy == 'human':
+        elif self.score_strategy == 'human':
             # TODO: this strategy lets you give the input
             pass
 
-        elif self.strategy == 'statistical':
+        elif self.score_strategy == 'statistical':
             # TODO: this strategy decides based on the statistically best option
             pass
         
