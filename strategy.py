@@ -1,5 +1,6 @@
 from collections import Counter
 from random import randint
+from yatzy import Helpers
 import numpy as np
 
 class Strategy:
@@ -13,7 +14,7 @@ class Strategy:
             rerollModel.load_model()
             scoreModel.load_model()
 
-    def decide_reroll(self, die, reroll_num, score_fields):
+    def decide_reroll(self, score_fields, die):
         if self.reroll_strategy == 'random':
             # 1. randomize amount of dice, X, [0 <= X <= 5]
             amt_of_dice = randint(0,5) 
@@ -22,7 +23,7 @@ class Strategy:
             return list(range(amt_of_dice)) 
 
         elif self.reroll_strategy == 'model':
-            return self.rerollModel.decide_reroll(score_fields, reroll_num, die)
+            return self.rerollModel.decide_reroll(score_fields, die)
         
         elif self.reroll_strategy == 'human':
             # TODO: this strategy lets you give the input
@@ -32,17 +33,17 @@ class Strategy:
             # TODO: this strategy decides based on the statistically best option
             pass
 
-    def decide_score_logging(self, score_fields, possible_moves):
+    def decide_score_logging(self, score_fields, die):
         if self.score_strategy == 'random':
             max_scores = np.array([3, 6, 9, 12, 15, 18, 12, 22, 18, 24, 15, 20, 28, 30, 50])
-            normalized_moves = [ (move[0], move[1] / max_scores[move[0]]) for move in possible_moves ]
+            normalized_moves = [ (move[0], move[1] / max_scores[move[0]]) for move in Helpers().get_possible_moves(die, score_fields) ]
             top_moves = sorted(normalized_moves, key=lambda item: item[1])[-2:]
             random_norm_move = top_moves[ randint(0, len(top_moves) - 1) ]
             random_move = [ random_norm_move[0], int(random_norm_move[1] * max_scores[random_norm_move[0]]) ]
             return random_move
 
         elif self.score_strategy == 'model':
-            return self.scoreModel.decide_score_logging(score_fields, possible_moves)
+            return self.scoreModel.decide_score_logging(score_fields, die)
 
         elif self.score_strategy == 'human':
             # TODO: this strategy lets you give the input

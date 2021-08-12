@@ -41,7 +41,7 @@ class TrainingGame(Yatzy):
 
             for reroll_num in range(2):
                 # the player makes a decision to throw dice based on the result
-                decision = self.player.decide_reroll(self.die, reroll_num)
+                decision = self.player.decide_reroll(self.die)
 
                 if verbosity > 1:
                     print( '[' + ', '.join([ str(self.die[idx]) + 'r' if idx in decision else str(self.die[idx]) for idx in range(len(self.die)) ]), '] -> ', end='')
@@ -57,7 +57,8 @@ class TrainingGame(Yatzy):
                 print(str(list(self.die)))
             
             # the player makes a decision about what field on the score board should be filled with what value
-            field_index, score = self.player.decide_score_logging(self)
+            field_index, score = self.player.decide_score_logging(self.die)
+
             if verbosity > 1:
                 print("\t\tput", score, "points on", self.idx_to_name(field_index))
 
@@ -78,7 +79,7 @@ class TrainingGame(Yatzy):
         self.history.commit_game(total_score)
 
         # train the players models with history
-        self.player.strategy.rerollModel.train(self.history)
-        self.player.strategy.scoreModel.train(self.history)
+        #self.player.strategy.rerollModel.train(self.history)
+        #self.player.strategy.scoreModel.train(self.history)
 
         return total_score

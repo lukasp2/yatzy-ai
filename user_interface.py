@@ -13,13 +13,13 @@ class UserInterface():
         pass
 
     def start(self):
-        configs = { 
+        configs = {  # run this next
             'random games' : False,
             'load models' : True,
             'model games' : True,
-            'num random games' : 0,
-            'num model games' : 5,
-            'save models' : True,
+            'num random games' : 1,
+            'num model games' : 100,
+            'save models' : False,
             'reroll_strategy' : 'model',
             'score_strategy' : 'model',
         }

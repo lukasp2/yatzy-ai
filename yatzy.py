@@ -33,62 +33,6 @@ class Yatzy:
         
         self.print_score_board()
 
-    # returns a list of scoring options the player has given a certain set of dice.
-    # the list contains tuples (field index, points), so (0, 3) means the player can
-    # put 3 in the 'ones' field.
-    def get_possible_moves(self, score_fields):
-
-        # find highest value dice which occurs at least 'min_occurances' times
-        def find_highest_duplicate_dice(die, min_occurances):
-            highest_dice = 0
-            duplicates = [ k for k, v in Counter(die).items() if v >= min_occurances ]
-            if duplicates:
-                highest_dice = max(duplicates)
-            return highest_dice
-
-        possible_moves = []
-
-        for field_index in range(len(score_fields)):
-            if score_fields.mask[field_index] == False:
-                points = 0
-                if 0 <= field_index <= 5: # singles
-                    points = np.count_nonzero(self.die == field_index + 1, axis=0) * (field_index + 1)
-                if field_index == 6: # pair
-                    points = find_highest_duplicate_dice(self.die, 2) * 2
-                if field_index == 7: # two pair
-                    dup_1 = find_highest_duplicate_dice(self.die, 2)
-                    if dup_1:
-                        dice_cpy = [ x for x in self.die if x != dup_1 ]
-                        dup_2 = find_highest_duplicate_dice(dice_cpy, 2)
-                        if dup_2:
-                            points = dup_1 * 2 + dup_2 * 2
-                if field_index == 8: # three of a kind
-                    points = find_highest_duplicate_dice(self.die, 3) * 3
-                if field_index == 9: # four of a kind
-                    points = find_highest_duplicate_dice(self.die, 4) * 4
-                if field_index == 10: # small straigt
-                    if np.all(self.die == np.array([1, 2, 3, 4, 5])):
-                        points = 15
-                if field_index == 11: # large straigt
-                    if np.all(self.die == np.array([2, 3, 4, 5, 6])):
-                        points = 20
-                if field_index == 12: # full house
-                    dup_1 = find_highest_duplicate_dice(self.die, 3)
-                    if dup_1:
-                        dice_cpy = [ x for x in self.die if x != dup_1 ]
-                        dup_2 = find_highest_duplicate_dice(dice_cpy, 2)
-                        if dup_2:
-                            points = dup_1 * 3 + dup_2 * 2
-                if field_index == 13: # chance
-                    points = sum(self.die)
-                if field_index == 14: # yatzy
-                    if np.all(self.die == self.die[0]):
-                        points = 50
-                
-                possible_moves.append((field_index, points))
-
-        return possible_moves
-
     # counts the points for the bonus
     def count_bonus_points(self, player):
         return sum(player.score_fields[0:6])
@@ -165,3 +109,85 @@ class Yatzy:
                 'sixes', 'pair', 'two pair', 'three of a kind', 
                 'four of a kind', 'small straight', 'large straight', 
                 'full house', 'chance', 'yatzy'][field_index]
+
+# This class is like a guy watching the game and you can ask him whats going on
+class Helpers():
+    def __init__(self) -> None:
+        pass
+
+    def find_highest_duplicate_dice(self, die, min_occurances):
+            duplicates = [ k for k, v in Counter(die).items() if v >= min_occurances ]
+            highest_dice = max(duplicates) if duplicates else 0
+            return highest_dice
+
+    # given a set of die and a field index, counts the score it would give
+    def count_score(self, die, field_index):
+        points = 0
+        if 0 <= field_index <= 5: # singles
+            points = np.count_nonzero(die == field_index + 1, axis=0) * (field_index + 1)
+        if field_index == 6: # pair
+            points = self.find_highest_duplicate_dice(die, 2) * 2
+        if field_index == 7: # two pair
+            dup_1 = self.find_highest_duplicate_dice(die, 2)
+            if dup_1:
+                dice_cpy = ma.masked_array([ x for x in die if x != dup_1 ], mask=False)
+                dup_2 = self.find_highest_duplicate_dice(dice_cpy, 2)
+                if dup_2:
+                    points = dup_1 * 2 + dup_2 * 2
+        if field_index == 8: # three of a kind
+            points = self.find_highest_duplicate_dice(die, 3) * 3
+        if field_index == 9: # four of a kind
+            points = self.find_highest_duplicate_dice(die, 4) * 4
+        if field_index == 10: # small straigt
+            if np.all(die == np.array([1, 2, 3, 4, 5])):
+                points = 15
+        if field_index == 11: # large straigt
+            if np.all(die == np.array([2, 3, 4, 5, 6])):
+                points = 20
+        if field_index == 12: # full house
+            dup_1 = self.find_highest_duplicate_dice(die, 3)
+            if dup_1:
+                dice_cpy = ma.masked_array([ x for x in die if x != dup_1 ], mask=False)
+                dup_2 = self.find_highest_duplicate_dice(dice_cpy, 2)
+                if dup_2:
+                    points = dup_1 * 3 + dup_2 * 2
+        if field_index == 13: # chance
+            points = sum(die)
+        if field_index == 14: # yatzy
+            if np.all(die == die[0]):
+                points = 50
+        return points
+    
+    def get_die_idx_for_play(self, die, field_index):
+        def find_highest_duplicate_dice(die, min_occurances):
+            duplicates = [ k for k, v in Counter(die).items() if v >= min_occurances ]
+            return max(duplicates) if duplicates else 0
+
+        if 0 <= field_index <= 5:
+            ret = [ index for index in range(len(die)) if die[index] != field_index + 1 ]
+        if field_index == 6: # pair
+            ret = [ index for index in range(len(die)) if die[index] != find_highest_duplicate_dice(die, 2) ] 
+        if field_index == 7: # two pair
+            dup_1 = find_highest_duplicate_dice(die, 2)
+            dice_cpy = [ x if x != dup_1 else 0 for x in die ]
+            dup_2 = find_highest_duplicate_dice(dice_cpy, 2)
+            ret = [ i for i in range(len(die)) if die[i] != dup_1 and die[i] != dup_2 ]
+        if field_index == 8: # three of a kind
+            ret = [ index for index in range(len(die)) if die[index] != find_highest_duplicate_dice(die, 3) ] 
+        if field_index == 9: # four of a kind
+            ret = [ index for index in range(len(die)) if die[index] != find_highest_duplicate_dice(die, 4) ] 
+        if 10 <= field_index <= 14: # small-, large straight, yatzy, full house, chance
+            ret = []
+        return list(set(ret))
+
+    # returns a list of scoring options the player has given a certain set of dice.
+    # the list contains tuples (field index, points), so (0, 3) means the player can
+    # put 3 in the 'ones' field.
+    def get_possible_moves(self, die, score_fields):
+        possible_moves = []
+        for field_index in range(len(score_fields)):
+            if score_fields.mask[field_index] == False:
+                points = self.count_score(die, field_index)
+                possible_moves.append((field_index, points))
+
+        return possible_moves

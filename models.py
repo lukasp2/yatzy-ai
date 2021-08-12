@@ -1,3 +1,5 @@
+from collections import Counter
+from yatzy import Helpers
 import numpy as np
 import numpy.ma as ma
 import tensorflow as tf
@@ -55,81 +57,69 @@ class Model:
         return [ final_score / 374 for final_score in final_scores ]
 
     def normalize_score(self, field_index, score):
-        max_scores = np.array([5, 10, 15, 20, 25, 30, 12, 22, 18, 24, 15, 20, 28, 30, 50])
+        #max_scores = np.array([5, 10, 15, 20, 25, 30, 12, 22, 18, 24, 15, 20, 28, 30, 50])
+        max_scores = np.array([4, 6, 9, 12, 14, 17,  16, 15, 18, 22, 13, 17, 20, 60, 25])
         return np.array([score / max_scores[field_index]])
 
     def normalize_score_fields(self, score_fields):
-        max_scores = np.array([5, 10, 15, 20, 25, 30, 12, 22, 18, 24, 15, 20, 28, 30, 50])
+        #max_scores = np.array([5, 10, 15, 20, 25, 30, 12, 22, 18, 24, 15, 20, 28, 30, 50])
+        max_scores = np.array([4, 6, 9, 12, 14, 17,  16, 15, 18, 22, 13, 17, 20, 60, 25])
         return [ score_fields.data[idx] / max_scores[idx] for idx in range(len(score_fields)) ]
 
 # Model predicting which of the 5 die is best to throw again.
 # input: 
 #   * (30) 5 die as one-hot values: [d1, d2, d3, d4, d5] * [x, x, x, x, x, x]
-#   * (2) reroll number [0..2] as a one-hot value: [x, x]
-#   * (15) available score fields: [s1, s2, ..., s15] 1 = available
 # output:
-#   * (1) expected final score of the game for this input
+#   * (15) expected value for each field
 class RerollModel(Model):
     def __init__(self):
-        super().__init__(47, 1)
+        super().__init__(30, 15)
 
         self.model = Sequential([
             Dense(units=self.num_inputs, input_shape=(self.num_inputs,), activation='relu'),
-            Dense(units=42, activation='relu'),
-            Dense(units=42, activation='relu'),
-            Dense(units=42, activation='relu'),
-            Dense(units=42, activation='relu'),
+            Dense(units=40, activation='relu'),
+            Dense(units=40, activation='relu'),
             Dense(units=self.num_outputs, activation='linear'),
         ])
 
         self.compile_model()
 
+    def compile_model(self):
+        opt = keras.optimizers.Adam(learning_rate=0.001)
+        self.model.compile(optimizer=opt, loss='mean_squared_error', metrics=[])
+
     # train model with inputs and outputs from one game
-    # number of dice throws are 15 * 3, thus one game consists of 45 batches
-    def train(self, history):
-        data = history.get_reroll_data()
-        die = [ self.categorize_die(die) for die in data["die"] ]
-        reroll_num = [ self.to_categorical(2, reroll_num) for reroll_num in data["reroll_num"] ]
-        available_fields = [ self.available_fields(score_fields) for score_fields in data["score_fields"] ]
-
-        outputs = [ self.normalize_score(item[0], item[1]) for item in data["outputs"] ]
-        inputs = [ ma.concatenate([die[i], reroll_num[i], available_fields[i]]) for i in range(len(die)) ]
-        
-        #print('models.py: RerollModel:train() inputs:')
-        #[ print('die', data["die"][i], '\nreroll num', data['reroll_num'][i], '\nscore fields', data['score_fields'][i], '\noutput:', data['outputs'][i], '\n') for i in range(len(die)) ]
-
+    def train(self, data):
+        inputs = [ self.categorize_die(die) for die in data["die"] ]
+        outputs = [ self.normalize_score_fields(score_fields) for score_fields in data["outputs"] ]
         super().train(inputs, outputs)
     
     # make a prediction of output based on input
-    def predict(self, data, index = 0):
+    def predict(self, data):
         die = self.categorize_die(data["die"])
-        reroll_num = self.to_categorical(2, data["reroll_num"])
-        score_fields = self.normalize_score_fields(data["score_fields"])
-
-        input_tensor = ma.concatenate([die, reroll_num, score_fields])
-        predicted_output = self.model.predict(input_tensor.reshape(-1, self.num_inputs))[0][index]    
+        input_tensor = die
+        predicted_output = self.model.predict(input_tensor.reshape(-1, self.num_inputs))[0]
         return predicted_output
 
     # returns the dice to throw in the form of a list of indexes
-    def decide_reroll(self, score_fields, reroll_num, dice):
+    def decide_reroll(self, score_fields, die):
         max_value = 0
-        best_move = ma.masked_array([0, 1, 2, 3, 4], mask=False)
+        prediction = self.predict({'die' : die})
 
-        # looping through all 32 ways to select any number of die from 5 die (2^5)
-        for i in range(32):
-            # using a mask to select all possible combinations of dice
-            mask = list(map(int, bin(i)[2:].zfill(5)))
-            inputs = { 
-                "die" : ma.masked_array(dice, mask=mask),
-                "reroll_num" : reroll_num,
-                "score_fields" : score_fields,
-            }
-            value = self.predict(inputs)
+        # filter predictions that would give zero points and predictions for fields that are unavailable
+        for field_index, value in enumerate(prediction):
+            if Helpers().count_score(die, field_index) == 0:
+                prediction[field_index] = 0
+
+        best_move = 0
+
+        for field_index, value in Helpers().get_possible_moves(die, score_fields):
             if value > max_value:
                 max_value = value
-                best_move = inputs["die"]
+                best_move = field_index
 
-        die_to_throw = np.array([ idx for idx in range(len(best_move)) if best_move[idx] is not ma.masked ])
+        die_to_throw = Helpers().get_die_idx_for_play(die, best_move)
+
         return die_to_throw
 
     def save_model(self):
@@ -138,66 +128,61 @@ class RerollModel(Model):
     def load_model(self):
         return super().load_model('RerollModel')
 
-# Model predicting best field to pick on the score board
+# Model predicting which field to log score in for a set of die
 # input: 
-#   * (15) score field: field_index as one-hot value
-#   * (1) score value
-#   * (6) Player.score_fields: [s1, s2, ..., s6] # change to [0..5]?
+#   * (30) 5 die as one-hot values: [d1, d2, d3, d4, d5] * [x, x, x, x, x, x]
 # output:
-#   * (1) expected final score of the game for this input
+#   * (15) expected value for each field
 class ScoreLogModel(Model):
     def __init__(self):
-        super().__init__(22, 1)
+        super().__init__(30, 15)
 
         self.model = Sequential([
             Dense(units=self.num_inputs, input_shape=(self.num_inputs,), activation='relu'),
-            Dense(units=20, activation='relu'),
-            Dense(units=20, activation='relu'),
-            Dense(units=20, activation='relu'),
+            Dense(units=40, activation='relu'),
+            Dense(units=40, activation='relu'),
             Dense(units=self.num_outputs, activation='linear'),
         ])
 
         self.compile_model()
 
-    # train model with inputs and outputs
-    def train(self, history):
-        data = history.get_score_log_data()
-        field_indexes = [ self.to_categorical(15, field_index) for field_index in data["field_indexes"] ]
-        scores = [ self.normalize_score(field_index, score) for field_index, score in zip(data["field_indexes"], data["scores"]) ]
-        score_fields = [ self.normalize_score_fields(score_field) for score_field in data["score_fields"] ]
-        inputs = [ ma.concatenate([field_indexes[i], scores[i], score_fields[i]]) for i in range(len(scores)) ]
-        outputs = self.normalize_final_scores(data["outputs"])
+    def compile_model(self):
+        opt = keras.optimizers.Adam(learning_rate=0.001)
+        self.model.compile(optimizer=opt, loss='mean_squared_error', metrics=[])
+
+    # train model with inputs and outputs from one game
+    def train(self, data):
+        inputs = [ self.categorize_die(die) for die in data["die"] ]
+        outputs = [ self.normalize_score_fields(score_fields) for score_fields in data["outputs"] ]
         super().train(inputs, outputs)
-
+    
     # make a prediction of output based on input
-    def predict(self, data, index = 0):
-        field_index = self.to_categorical(15, data["field_index"])
-        score = self.normalize_score(data["field_index"], data["score"])
-        score_fields = self.normalize_score_fields(data["score_fields"])
-
-        input_tensor = ma.concatenate([field_index, score, score_fields])
-        predicted_output = self.model.predict(input_tensor.reshape(-1, self.num_inputs))[0][index]
+    def predict(self, data):
+        die = self.categorize_die(data["die"])
+        input_tensor = die
+        predicted_output = self.model.predict(input_tensor.reshape(-1, self.num_inputs))[0]
         return predicted_output
 
     # returns the best move in the form [field_index, score]
-    def decide_score_logging(self, score_fields, possible_moves):
+    def decide_score_logging(self, score_fields, die):
         max_value = 0
-        best_move = possible_moves[0]
+        prediction = self.predict({'die' : die})
 
-        for move in possible_moves:
-            inputs = {
-                "field_index" : move[0],
-                "score" : move[1],
-                "score_fields" : score_fields[:6],
-            }
-            value = self.predict(inputs)
+        # filter predictions that would give zero points and predictions for fields that are unavailable
+        for field_index, value in enumerate(prediction):
+            if Helpers().count_score(die, field_index) == 0:
+                prediction[field_index] = 0
 
+        possible_moves = Helpers().get_possible_moves(die, score_fields)
+        best_move = possible_moves[0][0]
+
+        for field_index, value in possible_moves: ## its available??
             if value > max_value:
                 max_value = value
-                best_move = move
+                best_move = field_index
 
-        return best_move
-  
+        return best_move, Helpers().count_score(die, best_move)
+
     def save_model(self):
         return super().save_model('ScoreLogModel')
 

@@ -1,3 +1,4 @@
+from collections import Counter
 import numpy as np
 import numpy.ma as ma
 import tensorflow as tf
@@ -55,8 +56,6 @@ class History:
     def get_reroll_data(self):
         data = {
             "die" : [],
-            "reroll_num" : [],
-            "score_fields" : [],
             "outputs" : []
         }
 
@@ -64,10 +63,7 @@ class History:
             for play in game.plays:
                 for reroll_num in range(len(play.rerolls)):
                     data["die"].append(play.rerolls[reroll_num])
-                    data["reroll_num"].append( reroll_num )
-                    data["score_fields"].append(play.score_fields)
-                    data["outputs"].append(play.scoring)
-
+                    data["outputs"].append(np.array([ self.count_score(play.rerolls[reroll_num], i) for i in range(15) ]))
         return data
     
     # retrieve parts of the history which the model use for training
@@ -105,3 +101,46 @@ class History:
             })
 
         return data
+
+
+    def count_score(self, die, field_index):
+        def find_highest_duplicate_dice(die, min_occurances):
+            duplicates = [ k for k, v in Counter(die.data).items() if v >= min_occurances ]
+            highest_dice = max(duplicates) if duplicates else 0
+            return highest_dice
+
+        points = 0
+        if 0 <= field_index <= 5: # singles
+            points = np.count_nonzero(die == field_index + 1, axis=0) * (field_index + 1)
+        if field_index == 6: # pair
+            points = find_highest_duplicate_dice(die, 2) * 2
+        if field_index == 7: # two pair
+            dup_1 = find_highest_duplicate_dice(die, 2)
+            if dup_1:
+                dice_cpy = ma.masked_array([ x for x in die if x != dup_1 ], mask=False)
+                dup_2 = find_highest_duplicate_dice(dice_cpy, 2)
+                if dup_2:
+                    points = dup_1 * 2 + dup_2 * 2
+        if field_index == 8: # three of a kind
+            points = find_highest_duplicate_dice(die, 3) * 3
+        if field_index == 9: # four of a kind
+            points = find_highest_duplicate_dice(die, 4) * 4
+        if field_index == 10: # small straigt
+            if np.all(die == np.array([1, 2, 3, 4, 5])):
+                points = 15
+        if field_index == 11: # large straigt
+            if np.all(die == np.array([2, 3, 4, 5, 6])):
+                points = 20
+        if field_index == 12: # full house
+            dup_1 = find_highest_duplicate_dice(die, 3)
+            if dup_1:
+                dice_cpy = ma.masked_array([ x for x in die if x != dup_1 ], mask=False)
+                dup_2 = find_highest_duplicate_dice(dice_cpy, 2)
+                if dup_2:
+                    points = dup_1 * 3 + dup_2 * 2
+        if field_index == 13: # chance
+            points = sum(die)
+        if field_index == 14: # yatzy
+            if np.all(die == die[0]):
+                points = 50
+        return points
