@@ -14,11 +14,11 @@ class UserInterface():
 
     def start(self):
         configs = { 
-            'random games' : True,
-            'load models' : False,
-            'model games' : False,
-            'num random games' : 10000,
-            'num model games' : 0,
+            'random games' : False,
+            'load models' : True,
+            'model games' : True,
+            'num random games' : 0,
+            'num model games' : 5,
             'save models' : True,
             'reroll_strategy' : 'model',
             'score_strategy' : 'model',
