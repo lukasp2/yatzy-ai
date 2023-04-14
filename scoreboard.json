@@ -1,0 +1,96 @@
+{
+    "random": [
+        {
+            "highscore": 287,
+            "player": "Sir Blunder",
+            "average": 134,
+            "num_games": 1000,
+            "date": "2023-05-03",
+            "commit": "b1afb8d3c26c5d689dfc41ca7ce388576b3ba747"
+        },
+        {
+            "highscore": 286,
+            "player": "Sir Blunder",
+            "average": 136,
+            "num_games": 1000,
+            "date": "2023-05-06",
+            "commit": "be417a8801928e0a317ef558f206b337f62326a9"
+        },
+        {
+            "highscore": 285,
+            "player": "Sir Blunder",
+            "average": 139,
+            "num_games": 1000,
+            "date": "2023-05-03",
+            "commit": "b1afb8d3c26c5d689dfc41ca7ce388576b3ba747"
+        },
+        {
+            "highscore": 283,
+            "player": "Sir Blunder",
+            "average": 136,
+            "num_games": 1000,
+            "date": "2023-05-02",
+            "commit": "39abe4dcd0e56a3a9d9c2a86621cedc55d7293a9"
+        },
+        {
+            "highscore": 283,
+            "player": "Sir Blunder",
+            "average": 136,
+            "num_games": 1000,
+            "date": "2023-05-02",
+            "commit": "b1afb8d3c26c5d689dfc41ca7ce388576b3ba747"
+        }
+    ],
+    "ai": [
+        {
+            "highscore": 70,
+            "player": "Cowboy Beep beep",
+            "average": 70,
+            "num_games": 1,
+            "date": "2023-05-01",
+            "commit": "dd7822b03ecd9c22a60f4cbe38e0396f956538e7"
+        },
+        {
+            "highscore": 64,
+            "player": "Cowboy Beep beep",
+            "average": 64,
+            "num_games": 1,
+            "date": "2023-05-02",
+            "commit": "39abe4dcd0e56a3a9d9c2a86621cedc55d7293a9"
+        },
+        {
+            "highscore": 49,
+            "player": "Cowboy Beep beep",
+            "average": 49,
+            "num_games": 1,
+            "date": "2023-05-02",
+            "commit": "b1afb8d3c26c5d689dfc41ca7ce388576b3ba747"
+        },
+        {
+            "highscore": 46,
+            "player": "Cowboy Beep beep",
+            "average": 46,
+            "num_games": 1,
+            "date": "2023-05-03",
+            "commit": "b1afb8d3c26c5d689dfc41ca7ce388576b3ba747"
+        },
+        {
+            "highscore": 43,
+            "player": "Cowboy Beep beep",
+            "average": 43,
+            "num_games": 1,
+            "date": "2023-05-01",
+            "commit": "3bae118f0679d5261b3d3a8afcc52baf64128f35"
+        }
+    ],
+    "human": [
+        {
+            "highscore": 238,
+            "player": "Lukas",
+            "average": 238,
+            "num_games": 1,
+            "date": "2023-05-01",
+            "commit": "dd7822b03ecd9c22a60f4cbe38e0396f956538e7"
+        }
+    ]
+}
